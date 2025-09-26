@@ -1,40 +1,85 @@
-This repo contains sample code to test deploy docker hub images to Azure Container Instances
-Nice little index.html, nginx serves it.
+# 🚀 Azure Container Instance Deployment Sample
 
--- To Build Docker image local:
+This repository contains sample code to test deploying Docker Hub images to **Azure Container Instances (ACI)**.  
+A simple `index.html` is served using **Nginx**.
+
+---
+
+## 🛠️ Local Docker Image Workflow
+
+### 🔧 Build Docker Image Locally
+```bash
 podman build --platform linux/amd64 --rm -f Dockerfile -t simplenodeproj:v2 .
 
--- To Tag local image before pushing to Docker Hub:
+🏷️ Tag Local Image for Docker Hub
+
 podman tag simplenodeproj:v2 docker.io/zaied112454/simplenodeproj:v2
 
--- To push local docker image to docker hub registry:
-podman push docker.io/zaied112454/simplenodeproj:v2 
+🚀 Push Image to Docker Hub
 
+podman push docker.io/zaied112454/simplenodeproj:v2
 
--- To create Azure Container Instance in Azure CLI:
-az container create -g testcontainerinstancerg --name simplenodeproj --image zaied112454/simplenodeproj:v2 --os-type Linux --cpu 1 --memory 1 --ports 8080 8443
+☁️ Deploy to Azure Container Instance
 
--- If ACI created in Azure portal make sure to have public ip and DNS Label created - simplenodeproj, simplenodeproj.c3f6f4gbbgbadfb8.canadacentral.azurecontainer.io
-since the image was public no credential needed
+Using Azure CLI
 
-Challenges: 
+az container create -g testcontainerinstancerg \
+  --name simplenodeproj \
+  --image zaied112454/simplenodeproj:v2 \
+  --os-type Linux \
+  --cpu 1 \
+  --memory 1 \
+  --ports 8080 8443
 
-** Container was restaring again and again in Azure whereas local container was running fine
-reason was 
+If Using Azure Portal
 
-OS Architecture Mismatch
-If you built your image on an M1/M2 Mac, it may default to linux/arm64, which ACI doesn’t support.
-✅ Fix: Rebuild your image with:
-bash
+Ensure Public IP and DNS Label are configured.
+
+Example DNS:simplenodeproj.c3f6f4gbbgbadfb8.canadacentral.azurecontainer.io
+
+No credentials needed since the image is public.
+
+⚠️ Challenges Faced
+
+🔁 Container Restarting in Azure
+
+Even though the container ran fine locally, it kept restarting in ACI.
+
+🧬 OS Architecture Mismatch
+
+If built on an M1/M2 Mac, the image may default to linux/arm64, which ACI doesn’t support.
+
+✅ Fix:
+
 docker build --platform linux/amd64 -t myimage .
 
-** Port issue: 
-Error: rootlessport cannot expose privileged port 443, you can add 'net.ipv4.ip_unprivileged_port_start=443' to /etc/sysctl.conf (currently 1024), or choose a larger port number (>= 1024): listen tcp 0.0.0.0:443: bind: permission denied
--> used 8443:443 and 8080:80
+🔒 Port Binding Issue
 
+Error:
 
-Having Below in Dockerfile is important,
-ENTRYPOINT [ "nginx", "-g", "daemon off;" ] -> -g tells to run it in foreground not background, daemon off means same
+rootlessport cannot expose privileged port 443...
+bind: permission denied
 
-tested localhost:8080 and simplenodeproj.c3f6f4gbbgbadfb8.canadacentral.azurecontainer.io -> brings up the text
+✅ Fix: Used non-privileged ports:
 
+8443:443
+
+8080:80
+
+📦 Dockerfile Essentials
+
+Make sure to include:
+
+ENTRYPOINT [ "nginx", "-g", "daemon off;" ]
+
+-g runs Nginx in the foreground
+
+daemon off; disables background mode
+
+✅ Tested URLs
+
+Localhost: http://localhost:8080
+
+Azure: http://simplenodeproj.c3f6f4gbbgbadfb8.canadacentral.azurecontainer.io
+
+Both successfully serve the sample text.
